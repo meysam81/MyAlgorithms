@@ -3,6 +3,7 @@
 #include <limits>
 #include <vector>
 #include <cstdlib>
+
 using namespace std;
 
 #define INFINITY numeric_limits<int>::max()
@@ -14,29 +15,115 @@ using namespace std;
 const int NUMBER_OF_NODES = 7;
 const int MIN_DIST = 1;
 const int MAX_DIST = 100;
-const int START_NODE = 0;
+int START_NODE = 0;
 
-void updateDistances(int updatedNode, Dictionary &distSoFar, TwoDimArray &currentDists)
+class Dijkstra
 {
-    for (int i = 0; i < NUMBER_OF_NODES; i++)
+private:
+    class NodesVisited
     {
-        if (i == updatedNode)
-            continue;
-        if (distSoFar[i].second > currentDists[updatedNode][i])
-            distSoFar[i] = KeyValue(updatedNode, currentDists[updatedNode][i]);
-    }
-}
+    private:
+        OneDimArray mVisited;
 
-template <typename T>
-bool contains(vector<T> vec, const T &elem)
-{
-    bool result = false;
-    if (find(vec.begin(), vec.end(), elem) != vec.end())
+    public:
+        void add(int &node)
+        {
+            mVisited.push_back(node);
+        }
+        bool hasVisited(int &node) const
+        {
+            bool result = false;
+            if (find(mVisited.begin(), mVisited.end(), node) != mVisited.end())
+            {
+                result = true;
+            }
+            return result;
+        }
+        int Count() const { return mVisited.size(); }
+    };
+
+    class NodeDistance
     {
-        result = true;
+    private:
+        TwoDimArray mCurrentDists;
+
+    public:
+        NodeDistance(TwoDimArray &currentDists) : mCurrentDists(currentDists) {}
+        int Count() const { return mCurrentDists.size(); }
+        int Position(int row, int col) const { return mCurrentDists[row][col]; }
+        friend ostream &operator<<(ostream &output, NodeDistance const &obj)
+        {
+            for (int row = 0; row < obj.Count(); row++)
+            {
+                for (int col = 0; col < obj.Count(); col++)
+                    output << obj.Position(row, col) << " ";
+                cout << endl;
+            }
+            return output;
+        }
+    };
+
+    NodeDistance mCurrentDists;
+    Dictionary mDistSoFar;
+    Dictionary mResultingEdges;
+    int mNumberOfNodes;
+    int mStartingNode;
+    const int M_NON_NODE = -1;
+    NodesVisited mNodesVisited;
+
+    void mUpdateDistances(int updatedNode)
+    {
+        for (int i = 0; i < mNumberOfNodes; i++)
+        {
+            if (i == updatedNode)
+                continue;
+
+            if (mDistSoFar[i].second > mCurrentDists.Position(updatedNode, i))
+                mDistSoFar[i] = KeyValue(updatedNode, mCurrentDists.Position(updatedNode, i));
+        }
     }
-    return result;
-}
+
+public:
+    Dijkstra(int &startingNode, TwoDimArray &currentDists)
+        : mCurrentDists(currentDists), mNumberOfNodes(mCurrentDists.Count()), mStartingNode(startingNode)
+    {
+        for (int i = 0; i < mNumberOfNodes; i++)
+            mDistSoFar.push_back(KeyValue(M_NON_NODE, INFINITY));
+
+        mUpdateDistances(mStartingNode);
+    }
+
+    void FindNextClosestNode()
+    {
+        if (Completed())
+            return;
+
+        int source, destination;
+        int currentMin = INFINITY;
+        for (int i = 0; i < mNumberOfNodes; i++)
+        {
+            if (mDistSoFar[i].second < currentMin and !mNodesVisited.hasVisited(i))
+            {
+                destination = i;
+                source = mDistSoFar[i].first;
+                currentMin = mDistSoFar[i].second;
+            }
+        }
+        mUpdateDistances(destination);
+        mNodesVisited.add(destination);
+        mResultingEdges.push_back(KeyValue(source, destination));
+    }
+
+    bool Completed() const { return mNodesVisited.Count() == mNumberOfNodes; }
+    NodeDistance Distances() const { return mCurrentDists; }
+
+    friend ostream &operator<<(ostream &output, Dijkstra const &obj)
+    {
+        for (int i = 0; i < obj.mNumberOfNodes; i++)
+            output << obj.mResultingEdges[i].first << "-" << obj.mResultingEdges[i].second << endl;
+        return output;
+    }
+};
 
 int getRandInt(int lower, int upper)
 {
@@ -49,16 +136,10 @@ void initializeDistances(TwoDimArray &distances)
     {
         OneDimArray partial;
         for (int j = 0; j < NUMBER_OF_NODES; j++)
-        {
             if (i == j)
-            {
                 partial.push_back(0);
-            }
             else
-            {
                 partial.push_back(getRandInt(MIN_DIST, MAX_DIST));
-            }
-        }
         distances.push_back(partial);
     }
 }
@@ -67,46 +148,17 @@ int main()
 {
     srand(time(0));
 
-    OneDimArray visited;
-    Dictionary distSoFar;
-    Dictionary resultingEdges;
-
-    for (int i = 0; i < NUMBER_OF_NODES; i++)
-        distSoFar.push_back(KeyValue(INFINITY, INFINITY));
-
     TwoDimArray dist;
     initializeDistances(dist);
 
-    distSoFar[START_NODE] = KeyValue(START_NODE, 0);
-    visited.push_back(START_NODE);
-    updateDistances(START_NODE, distSoFar, dist);
-    for (auto &x : dist)
-    {
-        for (auto y : x)
-            cout << y << " ";
-        cout << endl;
-    }
-    cout << endl;
-    int source = START_NODE;
-    while (visited.size() < NUMBER_OF_NODES)
-    {
-        int destination;
-        int currentMin = INFINITY;
-        for (int i = 0; i < NUMBER_OF_NODES; i++)
-        {
-            if (distSoFar[i].second < currentMin and !contains(visited, i))
-            {
-                destination = i;
-                source = distSoFar[i].first;
-                currentMin = distSoFar[i].second;
-            }
-        }
-        updateDistances(destination, distSoFar, dist);
-        visited.push_back(destination);
-        resultingEdges.push_back(KeyValue(source, destination));
-    }
-    for (auto &x : resultingEdges)
-        cout << x.first << "-" << x.second << endl;
+    Dijkstra alg(START_NODE, dist);
+
+    cout << alg.Distances();
+
+    while (!alg.Completed())
+        alg.FindNextClosestNode();
+
+    cout << alg;
 
     return 0;
 }
