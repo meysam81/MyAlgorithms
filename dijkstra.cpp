@@ -6,10 +6,11 @@
 
 using namespace std;
 
+#define uint unsigned int
 #define INFINITY numeric_limits<int>::max()
-#define OneDimArray vector<int>
+#define OneDimArray vector<uint>
 #define TwoDimArray vector<OneDimArray>
-#define KeyValue pair<int, int>
+#define KeyValue pair<int, uint>
 #define Dictionary vector<KeyValue>
 
 const int NUMBER_OF_NODES = 7;
