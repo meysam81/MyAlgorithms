@@ -91,28 +91,29 @@ public:
         for (int i = 0; i < mNumberOfNodes; i++)
             mDistSoFar.push_back(KeyValue(M_NON_NODE, INFINITY));
 
+        mNodesVisited.add(mStartingNode);
         mUpdateDistances(mStartingNode);
     }
 
-    void FindNextClosestNode()
+    void Run()
     {
-        if (Completed())
-            return;
-
-        int source, destination;
-        int currentMin = INFINITY;
-        for (int i = 0; i < mNumberOfNodes; i++)
+        while (!Completed())
         {
-            if (mDistSoFar[i].second < currentMin and !mNodesVisited.hasVisited(i))
+            int source, destination;
+            int currentMin = INFINITY;
+            for (int i = 0; i < mNumberOfNodes; i++)
             {
-                destination = i;
-                source = mDistSoFar[i].first;
-                currentMin = mDistSoFar[i].second;
+                if (mDistSoFar[i].second < currentMin and !mNodesVisited.hasVisited(i))
+                {
+                    destination = i;
+                    source = mDistSoFar[i].first;
+                    currentMin = mDistSoFar[i].second;
+                }
             }
+            mUpdateDistances(destination);
+            mNodesVisited.add(destination);
+            mResultingEdges.push_back(KeyValue(source, destination));
         }
-        mUpdateDistances(destination);
-        mNodesVisited.add(destination);
-        mResultingEdges.push_back(KeyValue(source, destination));
     }
 
     bool Completed() const { return mNodesVisited.Count() == mNumberOfNodes; }
@@ -120,7 +121,7 @@ public:
 
     friend ostream &operator<<(ostream &output, Dijkstra const &obj)
     {
-        for (int i = 0; i < obj.mNumberOfNodes; i++)
+        for (int i = 0; i < obj.mResultingEdges.size(); i++)
             output << obj.mResultingEdges[i].first << "-" << obj.mResultingEdges[i].second << endl;
         return output;
     }
@@ -156,8 +157,7 @@ int main()
 
     cout << alg.Distances();
 
-    while (!alg.Completed())
-        alg.FindNextClosestNode();
+    alg.Run();
 
     cout << alg;
 
